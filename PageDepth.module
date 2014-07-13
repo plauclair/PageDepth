@@ -1,0 +1,66 @@
+<?php
+
+class PageDepth extends WireData implements Module {
+
+	public static function getModuleInfo() {
+		return array(
+			"title" => "Page Depth",
+			"version" => 50,
+			"summary" => "Lets you return a page's depth relative to the root, to a parent or a closest matching selector.",
+			"url" => "https://github.com/plauclair/PageDepth",
+			"autoload" => true,
+		);
+	}
+
+	public function init()
+	{
+		$this->addHook("Page::depth", $this, "depth");
+		$this->addHook("Page::depthFromClosest", $this, "depthFromClosest");
+		$this->addHook("Page::depthFromPage", $this, "depthFromPage");
+	}
+
+	public function depth($event)
+	{
+		$page = $event->data["object"];
+		if ($this->modules->isInstalled("LanguageSupportPageNames")) {
+			$language = (string) wire("user")->language;
+			$homePath = wire("pages")->get("id=1")->localName($language);
+		} else {
+			$homePath = wire("pages")->get("id=1")->name;
+		}
+		$paths = explode("/",rtrim(ltrim($page->path,"/"),"/"));
+		if ($paths[0] == $homePath) {
+			unset($paths[0]);
+		}
+		$paths = array_diff( $paths, array("") );
+		$event->return = count($paths);
+	}
+
+	public function depthFromClosest($event)
+	{
+		$page = $event->data["object"];
+		$selector = $event->arguments[0];
+		$closest = $page->closest("$selector")->depth();
+		if (!is_a("NullPage",$closest)) {
+			$event->return = $page->depth() - $closest;
+		} else {
+			$event->return = null;
+		}
+	}
+
+	public function depthFromPage($event)
+	{
+		$page = $event->data["object"];
+		// grab the page  or selector's text from the arguments
+		$fromPage = $event->arguments[0];
+		// if it's not a page, get one with selector
+		if (!$fromPage->name) {
+			$fromPage = wire("pages")->get("$fromPage");
+		}
+		if(!is_a($page->parent("id={$fromPage->id}"),"NullPage")) {
+			$event->return = $page->depth() - $fromPage->depth();
+		} else {
+			$event->return = null;
+		}
+	}
+}
