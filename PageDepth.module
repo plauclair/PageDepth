@@ -54,7 +54,7 @@ class PageDepth extends WireData implements Module {
 		// grab the page  or selector's text from the arguments
 		$fromPage = $event->arguments[0];
 		// if it's not a page, get one with selector
-		if (!$fromPage->name) {
+		if (!is_a("Page",$fromPage)) {
 			$fromPage = wire("pages")->get("$fromPage");
 		}
 		if(!is_a($page->parent("id={$fromPage->id}"),"NullPage")) {
