@@ -22,18 +22,7 @@ class PageDepth extends WireData implements Module {
 	public function depth($event)
 	{
 		$page = $event->data["object"];
-		if ($this->modules->isInstalled("LanguageSupportPageNames")) {
-			$language = (string) wire("user")->language;
-			$homePath = wire("pages")->get("id=1")->localName($language);
-		} else {
-			$homePath = wire("pages")->get("id=1")->name;
-		}
-		$paths = explode("/",rtrim(ltrim($page->path,"/"),"/"));
-		if ($paths[0] == $homePath) {
-			unset($paths[0]);
-		}
-		$paths = array_diff( $paths, array("") );
-		$event->return = count($paths);
+		$event->return = $page->parents()->count();
 	}
 
 	public function depthFromClosest($event)
@@ -53,7 +42,7 @@ class PageDepth extends WireData implements Module {
 		$page = $event->data["object"];
 		// grab the page  or selector's text from the arguments
 		$fromPage = $event->arguments[0];
-		// if it's not a page, get one with selector
+		// if it's not a page, get $fromPage one with selector
 		if (!is_a("Page",$fromPage)) {
 			$fromPage = wire("pages")->get("$fromPage");
 		}
